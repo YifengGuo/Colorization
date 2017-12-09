@@ -9,7 +9,7 @@ if __name__ == '__main__':
     # step 1: load data
     print "step 1: load data..."
     dataSet = []
-    fileIn = open('test_color.csv')
+    fileIn = open('color.csv')
     for line in fileIn.readlines():
         lineArr = line.strip().split(',')
         dataSet.append([float(lineArr[0]), float(lineArr[1]), float(lineArr[2])])
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         y = []
         z = []
         color_list = []
-        for i in xrange(numSamples):
+        for i in xrange(1000):
             rgb = []
             x.append(dataSet[i][0])
             y.append(dataSet[i][1])
