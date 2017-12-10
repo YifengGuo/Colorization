@@ -27,7 +27,7 @@ if __name__ == '__main__':
         y = []
         z = []
         color_list = []
-        for i in xrange(1000):
+        for i in xrange(numSamples):
             rgb = []
             x.append(dataSet[i][0])
             y.append(dataSet[i][1])
