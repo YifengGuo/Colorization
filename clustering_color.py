@@ -23,7 +23,7 @@ if __name__ == '__main__':
         temp[i] = centroids[labels[i]]
         with open('color_labels.txt', 'a') as f:
             f.write('\n' + str(temp[i]))
-        # print temp_40000[i]
+       # print temp_40000[i]
 
     # for data in temp_40000:
     #     print data
