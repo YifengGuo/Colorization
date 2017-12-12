@@ -11,7 +11,7 @@ if __name__ == '__main__':
         lineArr = line.strip().split(',')
         dataSet.append([float(lineArr[0]), float(lineArr[1]), float(lineArr[2])])
 
-    clf = KMeans()
+    clf = KMeans(n_clusters=6)
     s = clf.fit_predict(dataSet)
     labels = clf.labels_
     centroids = clf.cluster_centers_
