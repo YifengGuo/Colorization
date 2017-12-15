@@ -60,6 +60,10 @@ class FullyConnectedLayer(object):
         # for hidden layer:
         # delta_i = ai * (1 - ai) * sigma(Wki * delta_k)
         # ai is i-th layer output
+        # in network calc_gradient(), we first calculate the delta of output layer by (tj - yj) * yj * (1 - yj)
+        # then from last layer to first layer run backward()
+        # so ith input is i - 1th layer's output, and the delta of output layer is pre-calculated
+        # so what we do in below is to calculate the delta of the previous layer
         self.delta = self.activator.backward(self.input) * np.dot(self.W.T, delta_array)
         self.W_gradient = np.dot(delta_array, self.input.T)
         self.b_gradient = delta_array
