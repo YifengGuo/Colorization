@@ -128,7 +128,8 @@ class Network(object):
         self.update_weight(rate)
 
     def loss(self, label, output):
-        return 0.5 * (label - output) * (label - output).sum()
+        res = 0.5 * (label - output) * (label - output).sum()
+        return np.sum(res)
 
 
 def get_train_data_set():
@@ -149,6 +150,28 @@ def get_train_data_set():
     return train_input, train_labels
 
 
+def get_t_data_set():
+    '''
+    test data set
+    :return: 
+    '''
+    t_input = []
+    t_labels = []
+    fileIn1 = open('input_test.csv')
+    for line in fileIn1.readlines():
+        lineArr = line.strip().split(',')
+        t_input.append(map(float, lineArr))
+
+    fileIn2 = open('color_labels_test.csv')
+    for line in fileIn2.readlines():
+        lineArr = line.strip().split(',')
+        t_labels.append(map(float, lineArr))
+
+    fileIn1.close()
+    fileIn2.close()
+    return t_input, t_labels
+
+
 def transpose(args):
     return map(
         lambda arg: map(
@@ -158,7 +181,7 @@ def transpose(args):
     )
 
 
-def normalize_labels():
+def normalize_labels_train():
     '''
     transform labels to one-hot vector
     :return: 
@@ -188,6 +211,37 @@ def normalize_labels():
     return one_hot_vector
 
 
+def normalize_labels_t():
+    '''
+    for test
+    transform labels to one-hot vector
+    :return: 
+    '''
+    labels_index = []
+    clustering_labels = []
+    dict = {}
+    test_input, test_labels = get_t_data_set()
+    fileIn = open('labels.csv')
+    for line in fileIn.readlines():
+        lineArr = line.strip().split(',')
+        clustering_labels.append([float(lineArr[0]), float(lineArr[1]), float(lineArr[2])])
+    fileIn.close()
+
+    for i in range(len(clustering_labels)):
+        dict[i] = clustering_labels[i]
+
+    for label in test_labels:
+        for j in range(len(dict)):
+            if dict[j] == label:
+                labels_index.append(j)
+
+    one_hot_vector = []
+    for i in range(len(labels_index)):
+        one_hot_vector.append(padding(labels_index[i]))
+
+    return one_hot_vector
+
+
 def padding(index):
     '''
     construct one hot vector
@@ -197,7 +251,7 @@ def padding(index):
     :return: 
     '''
     res = []
-    for i in range(8):
+    for i in range(6):
         if i == index:
             res.append(0.9)
         else:
@@ -258,20 +312,96 @@ def train_evaluate():
     last_error_ratio = 1.0
     epoch = 0
     train_input, train_labels = transpose(get_train_data_set())
-    train_labels = aux(normalize_labels())
-    network = Network([9, 300, 8])
+    train_labels = aux(normalize_labels_train())
+    test_input, test_labels = transpose(get_t_data_set())
+    test_labels = aux(normalize_labels_t())
+    network = Network([9, 300, 6])
+    # print network.loss(train_labels[-1], network.predict(train_input[-1]))
     while True:
         epoch += 1
-        network.train(train_labels, train_input, 0.01, 1)
-        # print '%s epoch %d finished, loss: %f' % (str(datetime.now()), epoch,
-        #                                           network.loss(train_labels[-1], network.predict(train_input[-1])))
+        network.train(train_labels, train_input, 0.08, 1)
+        print '%s epoch %d finished, loss: %f' % (str(datetime.now()), epoch,
+                                                  network.loss(train_labels[-1], network.predict(train_input[-1])))
         if epoch % 2 == 0:
-            current_error_ratio = evaluate(network, train_input, train_labels)
+            current_error_ratio = evaluate(network, test_input, test_labels)
             print '%s, after %d epoch, current error ratio is: %f' % (str(datetime.now()), epoch, current_error_ratio)
             if current_error_ratio > last_error_ratio:
                 break
             else:
                 last_error_ratio = current_error_ratio
+
+        if epoch > 50:
+            break
+    return network
+
+
+def get_new_data():
+    new_data = []
+    fileIn = open('data.csv')
+    for line in fileIn.readlines():
+        lineArr = line.strip().split(',')
+        new_data.append(map(float, lineArr))
+    fileIn.close()
+    return new_data
+
+
+def decode_index(list):
+    '''
+    decode index to corresponding rgb labels
+    :return: 
+    '''
+    dict = {}
+    labels = []
+    fileIn = open('labels.csv')
+    for line in fileIn.readlines():
+        lineArr = line.strip().split(',')
+        labels.append(map(float, lineArr))
+    fileIn.close()
+
+    for i in range(len(labels)):
+        dict[i] = labels[i]
+
+    color = []
+    for i in range(len(list)):
+        color.append(dict[list[i]])
+    return color
+
+import csv
+
+
+def list_to_csv(list):
+    with open('data_color.csv', 'wb') as myfile:
+        for line in list:
+            myfile.writelines(','.join(map(repr, line)))
+            myfile.write('\n')
+
+
+from PIL import Image
+
+
+def draw_image():
+    color_list = []
+    fileIn = open('data_color.csv')
+    for line in fileIn.readlines():
+        lineArr = line.strip().split(',')
+        color_list.append(tuple(map(int, map(float, lineArr))))
+
+    for t in color_list:
+        print t
+        # print type(tuple)
+
+    im = Image.new("RGB", (481, 481))  # pixels of image
+    pix = im.load()
+    i = 0
+
+    for x in range(481):
+        for y in range(481):
+            pix[x, y] = color_list[i]
+            i += 1
+
+    im.save("data_image.png", "PNG")
+    print 'finished'
+
 
 if __name__ == '__main__':
     # train_input, train_labels = get_train_data_set()
@@ -282,7 +412,24 @@ if __name__ == '__main__':
     #
     # for one_label in train_labels:
     #     print one_label
-    train_evaluate()
+    network = train_evaluate()
+    input = get_new_data()
+    # input = [[82, 82, 82, 82, 82, 82, 82, 82, 82],
+    #          [82, 82, 81, 82, 82, 82, 82, 82, 82],
+    #          [82, 81, 81, 82, 82, 82, 82, 82, 82],
+    #          [81, 81, 82, 82, 82, 82, 82, 82, 82],
+    #          [81, 82, 82, 82, 82, 82, 82, 82, 82]]
+    list = []
+    for i in range((len(input))):
+        list.append(get_max_index(network.predict(aux(input)[i])))
+
+    color = decode_index(list)
+    for line in color:
+        print line
+    list_to_csv(color)
+
+    draw_image()
+
     # a = normalize_labels()
     # b = np.array(a[:10])
     # print b.T
